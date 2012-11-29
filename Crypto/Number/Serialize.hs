@@ -1,6 +1,7 @@
 module Crypto.Number.Serialize
     ( i2osp
     , os2ip
+    , i2ospOf
     , lengthBytes
     ) where
 
@@ -19,6 +20,19 @@ i2osp m
     | otherwise = B.reverse $ B.unfoldr divMod256 m
     where divMod256 0 = Nothing
           divMod256 n = Just (fromIntegral a,b) where (b,a) = n `divMod` 256
+
+
+-- | just like i2osp, but take an extra parameter for size.
+-- if the number is too big to fit in @len bytes, nothing is returned
+-- otherwise the number is padded with 0 to fit the @len required.
+i2ospOf :: Int -> Integer -> Maybe ByteString
+i2ospOf len m
+    | lenbytes < len  = Just $ B.replicate (len - lenbytes) 0 `B.append` bytes 
+    | lenbytes == len = Just bytes
+    | otherwise       = Nothing
+    where
+        lenbytes = B.length bytes
+        bytes    = i2osp m
 
 -- | returns the number of bytes to store an integer with i2osp
 lengthBytes :: Integer -> Int
