@@ -2,6 +2,7 @@ module Crypto.Number.Serialize
     ( i2osp
     , os2ip
     , i2ospOf
+    , i2ospOf_
     , lengthBytes
     ) where
 
@@ -27,9 +28,20 @@ i2osp m
 -- otherwise the number is padded with 0 to fit the @len required.
 i2ospOf :: Int -> Integer -> Maybe ByteString
 i2ospOf len m
-    | lenbytes < len  = Just $ B.replicate (len - lenbytes) 0 `B.append` bytes 
+    | lenbytes < len  = Just $ B.replicate (len - lenbytes) 0 `B.append` bytes
     | lenbytes == len = Just bytes
     | otherwise       = Nothing
+    where
+        lenbytes = B.length bytes
+        bytes    = i2osp m
+
+-- | just like i2ospOf except that it doesn't expect a failure.
+-- for example if you just took a modulo of the number that represent
+-- the size (example the RSA modulo n).
+i2ospOf_ :: Int -> Integer -> ByteString
+i2ospOf_ len m
+    | lenbytes < len = B.replicate (len - lenbytes) 0 `B.append` bytes
+    | otherwise      = bytes
     where
         lenbytes = B.length bytes
         bytes    = i2osp m

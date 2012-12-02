@@ -18,7 +18,7 @@ module Crypto.Number.Prime
     , isCoprime
     ) where
 
-import Crypto.Random
+import Crypto.Random.Types
 import Data.Bits
 import Crypto.Number.Generate
 import Crypto.Number.Basic (sqrti, gcde_binary)
@@ -28,68 +28,62 @@ import Crypto.Number.ModArithmetic (exponantiation)
 -- first a list of small primes are implicitely tested for divisibility,
 -- then a fermat primality test is used with arbitrary numbers and
 -- then the Miller Rabin algorithm is used with an accuracy of 30 recursions
-isProbablyPrime :: CryptoRandomGen g => g -> Integer -> Either GenError (Bool, g)
+isProbablyPrime :: CPRG g => g -> Integer -> (Bool, g)
 isProbablyPrime rng !n
-    | any (\p -> p `divides` n) (filter (< n) firstPrimes) = Right (False, rng)
+    | any (\p -> p `divides` n) (filter (< n) firstPrimes) = (False, rng)
     | primalityTestFermat 50 (n`div`2) n                   = primalityTestMillerRabin rng 30 n
-    | otherwise                                            = Right (False, rng)
+    | otherwise                                            = (False, rng)
 
 -- | generate a prime number of the required bitsize
-generatePrime :: CryptoRandomGen g => g -> Int -> Either GenError (Integer, g)
-generatePrime rng bits = case generateOfSize rng bits of
-    Left err         -> Left err
-    Right (sp, rng') -> findPrimeFrom rng' sp
+generatePrime :: CPRG g => g -> Int -> (Integer, g)
+generatePrime rng bits =
+    let (sp, rng') = generateOfSize rng bits
+     in findPrimeFrom rng' sp
 
 -- | generate a prime number of the form 2p+1 where p is also prime.
 -- it is also knowed as a Sophie Germaine prime or safe prime.
 --
 -- The number of safe prime is significantly smaller to the number of prime,
 -- as such it shouldn't be used if this number is supposed to be kept safe.
-generateSafePrime :: CryptoRandomGen g => g -> Int -> Either GenError (Integer, g)
-generateSafePrime rng bits = case generateOfSize rng bits of
-    Left err         -> Left err
-    Right (sp, rng') -> case findPrimeFromWith rng' (\g i -> isProbablyPrime g (2*i+1)) (sp `div` 2) of
-        Left err         -> Left err
-        Right (p, rng'') -> Right (2*p+1, rng'')
+generateSafePrime :: CPRG g => g -> Int -> (Integer, g)
+generateSafePrime rng bits =
+    let (sp, rng') = generateOfSize rng bits
+        (p, rng'') = findPrimeFromWith rng' (\g i -> isProbablyPrime g (2*i+1)) (sp `div` 2)
+     in (2*p+1, rng'')
 
 -- | find a prime from a starting point where the property hold.
-findPrimeFromWith :: CryptoRandomGen g => g -> (g -> Integer -> Either GenError (Bool,g)) -> Integer -> Either GenError (Integer, g)
+findPrimeFromWith :: CPRG g => g -> (g -> Integer -> (Bool,g)) -> Integer -> (Integer, g)
 findPrimeFromWith rng prop !n
     | even n        = findPrimeFromWith rng prop (n+1)
     | otherwise     = case isProbablyPrime rng n of
-        Left err               -> Left err
-        Right (False, rng')    -> findPrimeFromWith rng' prop (n+2)
-        Right (True, rng')     ->
+        (False, rng')    -> findPrimeFromWith rng' prop (n+2)
+        (True, rng')     ->
             case prop rng' n of
-                Left err             -> Left err
-                Right (False, rng'') -> findPrimeFromWith rng'' prop (n+2)
-                Right (True, rng'')  -> Right (n, rng'')
+                (False, rng'') -> findPrimeFromWith rng'' prop (n+2)
+                (True, rng'')  -> (n, rng'')
 
 -- | find a prime from a starting point with no specific property.
-findPrimeFrom :: CryptoRandomGen g => g -> Integer -> Either GenError (Integer, g)
-findPrimeFrom rng n = findPrimeFromWith rng (\g _ -> Right (True, g)) n
+findPrimeFrom :: CPRG g => g -> Integer -> (Integer, g)
+findPrimeFrom rng n = findPrimeFromWith rng (\g _ -> (True, g)) n
 
 -- | Miller Rabin algorithm return if the number is probably prime or composite.
 -- the tries parameter is the number of recursion, that determines the accuracy of the test.
-primalityTestMillerRabin :: CryptoRandomGen g => g -> Int -> Integer -> Either GenError (Bool, g)
+primalityTestMillerRabin :: CPRG g => g -> Int -> Integer -> (Bool, g)
 primalityTestMillerRabin rng tries !n
     | n <= 3     = error "Miller-Rabin requires tested value to be > 3"
-    | even n     = Right (False, rng)
+    | even n     = (False, rng)
     | tries <= 0 = error "Miller-Rabin tries need to be > 0"
-    | otherwise  = case generateTries tries rng of
-                        Left err                -> Left err
-                        Right (witnesses, rng') -> Right (loop witnesses, rng')
+    | otherwise  = let (witnesses, rng') = generateTries tries rng
+                    in (loop witnesses, rng')
         where !nm1 = n-1
               !nm2 = n-2
 
               (!s,!d) = (factorise 0 nm1)
 
-              generateTries 0 g = Right ([], g)
-              generateTries t g = case generateBetween g 2 nm2 of
-                                       Left err      -> Left err
-                                       Right (v, g') -> case generateTries (t-1) g' of
-                                                             Left err        -> Left err
-                                                             Right (vs, g'') -> Right (v:vs, g'')
+              generateTries 0 g = ([], g)
+              generateTries t g = let (v,g')   = generateBetween g 2 nm2
+                                      (vs,g'') = generateTries (t-1) g'
+                                   in (v:vs, g'')
 
               -- factorise n-1 into the form 2^s*d
               factorise :: Integer -> Integer -> (Integer, Integer)
@@ -102,7 +96,7 @@ primalityTestMillerRabin rng tries !n
               loop []     = True
               loop (w:ws) = let x = expmod w d n
                              in if x == (1 :: Integer) || x == nm1
-                                   then loop ws 
+                                   then loop ws
                                    else loop' ws ((x*x) `mod` n) 1
 
               -- loop from 1 to s-1. if we reach the end then it's composite
@@ -110,7 +104,7 @@ primalityTestMillerRabin rng tries !n
                   | r == s    = False
                   | x2 == 1   = False
                   | x2 /= nm1 = loop' ws ((x2*x2) `mod` n) (r+1)
-                  | otherwise = loop ws 
+                  | otherwise = loop ws
 
 {-
     n < z -> witness to test

@@ -17,7 +17,6 @@ import Crypto.Number.Generate
 import Crypto.Number.Prime
 import Crypto.Number.Serialize
 
-import Crypto.Random hiding (throwLeft)
 import RNG
 
 prop_gcde_binary_valid :: (Positive Integer, Positive Integer) -> Bool
@@ -63,11 +62,10 @@ prop_generate_valid (seed, Positive h) =
     let v = withRNG seed (\g -> generateMax g h)
      in (v >= 0 && v < h)
 
-withAleasInteger :: Rng -> Seed -> (Rng -> Either GenError (a,Rng)) -> a
-withAleasInteger g (Seed i) f = fst $ throwLeft $ f $ throwLeft $ reseed (i2osp $ fromIntegral i) g
-    where throwLeft = either (const (error "impossible")) id
+withAleasInteger :: Rng -> Seed -> (Rng -> (a,Rng)) -> a
+withAleasInteger g (Seed i) f = fst $ f $ reseed (i2osp $ fromIntegral i) g
 
-withRNG :: Seed -> (Rng -> Either GenError (a,Rng)) -> a
+withRNG :: Seed -> (Rng -> (a,Rng)) -> a
 withRNG seed f = withAleasInteger rng seed f
 
 newtype PositiveSmall = PositiveSmall Integer
@@ -75,7 +73,7 @@ newtype PositiveSmall = PositiveSmall Integer
 
 instance Arbitrary PositiveSmall where
     arbitrary = PositiveSmall . fromIntegral <$> (resize (2^(20 :: Int)) (arbitrary :: Gen Int))
- 
+
 data Range = Range Integer Integer
            deriving (Show,Eq)
 

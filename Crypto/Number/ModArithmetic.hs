@@ -32,6 +32,7 @@ exponantiation_rtl_binary b e m = loop e b 1
 -- using repetitive squaring.
 exponantiation :: Integer -> Integer -> Integer -> Integer
 exponantiation b e m
+    | b == 1    = b
     | e == 0    = 1
     | e == 1    = b `mod` m
     | even e    = let p = (exponantiation b (e `div` 2) m) `mod` m
