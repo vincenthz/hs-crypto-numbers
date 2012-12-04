@@ -18,7 +18,7 @@ module Crypto.Number.Prime
     , isCoprime
     ) where
 
-import Crypto.Random.Types
+import Crypto.Random.API
 import Data.Bits
 import Crypto.Number.Generate
 import Crypto.Number.Basic (sqrti, gcde_binary)
