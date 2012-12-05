@@ -36,8 +36,8 @@ Test-Suite test-crypto-numbers
                    , bytestring
                    , vector
                    , QuickCheck >= 2
-                   , test-framework >= 0.3.3 && < 0.7
-                   , test-framework-quickcheck2 >= 0.2.9 && < 0.3
+                   , test-framework >= 0.3.3
+                   , test-framework-quickcheck2 >= 0.2.9
   ghc-options:       -Wall -O2
 
 Benchmark bench-crypto-numbers
