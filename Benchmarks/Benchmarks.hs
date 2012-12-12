@@ -17,6 +17,8 @@ lg2 = 21392813098390824190840192812389082390812940821904891028439028490128904829
 main = defaultMain
     [ bgroup "std ops"
         [ bench "mod" $ nf (mod lg1) lg2
+        , bench "rem" $ nf (rem lg1) lg2
+        , bench "div" $ nf (div lg1) lg2
         , bench "quot" $ nf (quot lg1) lg2
         , bench "divmod" $ nf (divMod lg1) lg2
         , bench "quotRem" $ nf (quotRem lg1) lg2
