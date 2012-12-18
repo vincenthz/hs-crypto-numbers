@@ -6,6 +6,7 @@ import Crypto.Number.Serialize
 import Crypto.Number.Generate
 import qualified Data.ByteString as B
 import Crypto.Number.ModArithmetic
+import Data.Bits
 
 primes = [3, 5, 7, 29, 31, 211, 2309, 2311, 30029, 200560490131, 304250263527209]
 carmichaelNumbers = [41041, 62745, 63973, 75361, 101101, 126217, 172081, 188461, 278545, 340561]
@@ -13,6 +14,9 @@ carmichaelNumbers = [41041, 62745, 63973, 75361, 101101, 126217, 172081, 188461,
 lg1, lg2 :: Integer
 lg1 = 21389083291083903845902381390285907190274907230982112390820985903825329874812973821790321904790217490217409721904832974210974921740972109481490128430982190472109874802174907490271904124908210958093285098309582093850918902581290859012850829105809128590218590281905812905810928590128509128940821903829018390849839578967358920127598901248259797158249684571948075896458741905823982671490352896791052386357019528367902
 lg2 = 21392813098390824190840192812389082390812940821904891028439028490128904829104891208940835932882910839218309812093118249089871209347472901874902407219740921840928149087284397490128903843789289014374839281492038091283923091809734832974180398210938901284839274091749021709
+
+bitsAndShift8 n i = (n `shiftR` i, n .&. 0xff)
+modAndShift8 n i = (n `shiftR` i, n `mod` 0x100)
 
 main = defaultMain
     [ bgroup "std ops"
@@ -22,6 +26,12 @@ main = defaultMain
         , bench "quot" $ nf (quot lg1) lg2
         , bench "divmod" $ nf (divMod lg1) lg2
         , bench "quotRem" $ nf (quotRem lg1) lg2
+        ]
+    , bgroup "divMod by 256"
+        [ bench "divmod 256" $ nf (divMod lg1) 256
+        , bench "quotRem 256" $ nf (quotRem lg1) 256
+        , bench "modAndShift 8" $ nf (modAndShift8 lg1) 8
+        , bench "bitsAndShift 8" $ nf (bitsAndShift8 lg1) 8
         ]
     , bgroup "serialization bs->i"
         [ bench "8"    $ nf os2ip b8
@@ -36,6 +46,13 @@ main = defaultMain
         , bench "1000"   $ nf i2osp (2^1000)
         , bench "10000"  $ nf i2osp (2^10000)
         , bench "100000" $ nf i2osp (2^100000)
+        ]
+    , bgroup "serialization i->bs of size"
+        [ bench "10"     $ nf (i2ospOf_ 4) (2^10)
+        , bench "100"    $ nf (i2ospOf_ 16) (2^100)
+        , bench "1000"   $ nf (i2ospOf_ 128) (2^1000)
+        , bench "10000"  $ nf (i2ospOf_ 1560) (2^10000)
+        , bench "100000" $ nf (i2ospOf_ 12502) (2^100000)
         ]
     , bgroup "exponentiation"
         [ bench "2^1234 mod 2^999" $ nf (exponantiation 2 1234) (2^999)
