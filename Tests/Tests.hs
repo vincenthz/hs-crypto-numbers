@@ -3,8 +3,10 @@
 
 import Test.Framework (defaultMain, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
+import Test.Framework.Providers.HUnit (testCase)
 
 import Test.QuickCheck
+import Test.HUnit
 --import Test.QuickCheck.Test
 
 import Control.Applicative ((<$>))
@@ -91,11 +93,24 @@ instance Show Seed where
 instance Arbitrary Seed where
     arbitrary = arbitrary >>= \(Positive i) -> return (Seed i)
 
+serializationKATTests = concatMap f vectors
+    where f (v, bs) = [ testCase ("i2osp " ++ show v) (i2osp v  @=? bs)
+                      , testCase ("os2ip " ++ show v) (os2ip bs @=? v)
+                      ]
+          vectors =
+            [ (0x10000, "\SOH\NUL\NUL")
+            , (0x1234, "\DC24")
+            , (0xf123456, "\SI\DC24V")
+            , (0xf21908421feabd21490, "\SI!\144\132!\254\171\210\DC4\144")
+            , (0x7521908421feabd21490, "u!\144\132!\254\171\210\DC4\144")
+            ]
+
 main :: IO ()
 main = defaultMain
     [ testGroup "serialization"
         [ testProperty "unbinary.binary==id" (\(Positive i) -> os2ip (i2osp i) == i)
         , testProperty "length integer" (\(Positive i) -> B.length (i2osp i) == lengthBytes i)
+        , testGroup "KAT" serializationKATTests
         ]
     , testGroup "gcde binary"
         [ testProperty "gcde" prop_gcde_binary_valid

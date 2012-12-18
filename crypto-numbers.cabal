@@ -36,8 +36,10 @@ Test-Suite test-crypto-numbers
                    , bytestring
                    , vector
                    , QuickCheck >= 2
+                   , HUnit
                    , test-framework >= 0.3.3
                    , test-framework-quickcheck2 >= 0.2.9
+                   , test-framework-hunit
   ghc-options:       -Wall -O2
 
 Benchmark bench-crypto-numbers
