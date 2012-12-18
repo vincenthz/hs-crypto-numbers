@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 -- |
 -- Module      : Crypto.Number.ModArithmetic
 -- License     : BSD-style
@@ -10,10 +11,19 @@ module Crypto.Number.ModArithmetic
     ( exponantiation_rtl_binary
     , exponantiation
     , inverse
+    , inverseCoprimes
     ) where
 
+import Control.Exception (throw, Exception)
 import Crypto.Number.Basic (gcde_binary)
 import Data.Bits
+import Data.Typeable
+
+-- | Raised when two numbers are supposed to be coprimes but are not.
+data CoprimesAssertionError = CoprimesAssertionError
+    deriving (Show,Typeable)
+
+instance Exception CoprimesAssertionError
 
 -- note on exponantiation: 0^0 is treated as 1 for mimicking the standard library;
 -- the mathematic debate is still open on whether or not this is true, but pratically
@@ -43,3 +53,15 @@ exponantiation b e m
 inverse :: Integer -> Integer -> Maybe Integer
 inverse g m = if d > 1 then Nothing else Just (x `mod` m)
     where (x,_,d) = gcde_binary g m
+
+-- | Compute the modular inverse of 2 coprime numbers.
+-- This is equivalent to inverse except that the result
+-- is known to exists.
+--
+-- if the numbers are not defined as coprime, this function
+-- will raise a CoprimesAssertionError.
+inverseCoprimes :: Integer -> Integer -> Integer
+inverseCoprimes g m =
+    case inverse g m of
+        Nothing -> throw CoprimesAssertionError
+        Just i  -> i
