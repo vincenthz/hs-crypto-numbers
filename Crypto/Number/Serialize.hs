@@ -13,10 +13,12 @@ import Data.Bits
 import Foreign.Storable
 import Foreign.Ptr
 
+{-# INLINE divMod256 #-}
 divMod256 :: Integer -> (Integer, Integer)
 divMod256 n = (n `shiftR` 8, n .&. 0xff)
 
 -- | os2ip converts a byte string into a positive integer
+{-# INLINE os2ip #-}
 os2ip :: ByteString -> Integer
 os2ip = B.foldl' (\a b -> (256 * a) .|. (fromIntegral b)) 0
 
@@ -46,6 +48,7 @@ i2ospOf len m
 -- | just like i2ospOf except that it doesn't expect a failure.
 -- for example if you just took a modulo of the number that represent
 -- the size (example the RSA modulo n).
+{-# INLINE i2ospOf_ #-}
 i2ospOf_ :: Int -> Integer -> ByteString
 i2ospOf_ len m = B.unsafeCreate len fillPtr
     where fillPtr srcPtr = loop m (srcPtr `plusPtr` (len-1))
@@ -62,6 +65,8 @@ i2ospOf_ len m = B.unsafeCreate len fillPtr
                           else fillerLoop (ptr `plusPtr` (-1))
 
 -- | returns the number of bytes to store an integer with i2osp
+--
+-- FIXME: really slow implementation. use log or bigger shifts.
 lengthBytes :: Integer -> Int
 lengthBytes n
     | n < 256   = 1
