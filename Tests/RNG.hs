@@ -24,8 +24,8 @@ getBytes n g =
      in (b:l, g'')
 
 instance CPRG Rng where
-    cprgGenBytes g len    = first B.pack $ getBytes len g
-    cprgSupplyEntropy g e = reseed e g
+    cprgGenBytes len g    = first B.pack $ getBytes len g
+    cprgSupplyEntropy e g = reseed e g
     cprgNeedReseed _      = maxBound
 
 reseed :: B.ByteString -> Rng -> Rng
