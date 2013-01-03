@@ -17,7 +17,7 @@ Library
   Build-Depends:     base >= 4 && < 5
                    , bytestring
                    , vector
-                   , crypto-random-api >= 0.2
+                   , crypto-random-api >= 0.2 && < 0.3
   Exposed-modules:   Crypto.Number.ModArithmetic
                      Crypto.Number.Serialize
                      Crypto.Number.Generate
