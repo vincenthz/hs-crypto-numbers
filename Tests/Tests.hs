@@ -12,6 +12,7 @@ import Test.HUnit
 import Control.Applicative ((<$>))
 
 import qualified Data.ByteString as B
+import Data.ByteString.Char8 () -- orphan IsString instance
 
 import Crypto.Number.ModArithmetic
 import Crypto.Number.Basic
