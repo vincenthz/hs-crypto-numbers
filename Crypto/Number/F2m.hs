@@ -77,10 +77,10 @@ square n1 = go n1 ln1
 -- | Inversion over  F₂m using extended Euclidean algorithm.
 invF2m :: Integer -- ^ Irreducible binary polynomial
        -> Integer -> Maybe Integer
+invF2m _  0 = Nothing
 invF2m fx n = go n fx 1 0
     where
       go u v g1 g2
-          | u == 0 = Nothing
           | u == 1 = Just $ modF2m fx g1
           | otherwise = if j < 0
                            then go u  (v  `xor` shift  u (-j))
