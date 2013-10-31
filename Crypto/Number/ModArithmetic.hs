@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE CPP #-}
 -- |
 -- Module      : Crypto.Number.ModArithmetic
 -- License     : BSD-style
@@ -23,9 +24,14 @@ module Crypto.Number.ModArithmetic
     ) where
 
 import Control.Exception (throw, Exception)
+import Data.Typeable
+
+#if MIN_VERSION_integer_gmp(0,5,1)
+import GHC.Integer.GMP.Internals
+#else
 import Crypto.Number.Basic (gcde_binary)
 import Data.Bits
-import Data.Typeable
+#endif
 
 -- | Raised when two numbers are supposed to be coprimes but are not.
 data CoprimesAssertionError = CoprimesAssertionError
@@ -43,7 +49,12 @@ expSafe :: Integer -- ^ base
         -> Integer -- ^ exponant
         -> Integer -- ^ modulo
         -> Integer -- ^ result
-expSafe = exponentiation
+expSafe =
+#if MIN_VERSION_integer_gmp(0,5,1)
+    powModSecInteger
+#else
+    exponentiation
+#endif
 
 -- | Compute the modular exponentiation of base^exponant using
 -- the fastest algorithm without any consideration for
@@ -55,7 +66,12 @@ expFast :: Integer -- ^ base
         -> Integer -- ^ exponant
         -> Integer -- ^ modulo
         -> Integer -- ^ result
-expFast = exponentiation
+expFast =
+#if MIN_VERSION_integer_gmp(0,5,1)
+    powModInteger
+#else
+    exponentiation
+#endif
 
 -- note on exponentiation: 0^0 is treated as 1 for mimicking the standard library;
 -- the mathematic debate is still open on whether or not this is true, but pratically
@@ -64,15 +80,22 @@ expFast = exponentiation
 -- | exponentiation_rtl_binary computes modular exponentiation as b^e mod m
 -- using the right-to-left binary exponentiation algorithm (HAC 14.79)
 exponentiation_rtl_binary :: Integer -> Integer -> Integer -> Integer
+#if MIN_VERSION_integer_gmp(0,5,1)
+exponentiation_rtl_binary = powModSecInteger
+#else
 exponentiation_rtl_binary 0 0 m = 1 `mod` m
 exponentiation_rtl_binary b e m = loop e b 1
     where sq x          = (x * x) `mod` m
           loop !0 _  !a = a `mod` m
           loop !i !s !a = loop (i `shiftR` 1) (sq s) (if odd i then a * s else a)
+#endif
 
 -- | exponentiation computes modular exponentiation as b^e mod m
 -- using repetitive squaring.
 exponentiation :: Integer -> Integer -> Integer -> Integer
+#if MIN_VERSION_integer_gmp(0,5,1)
+exponentiation = powModSecInteger
+#else
 exponentiation b e m
     | b == 1    = b
     | e == 0    = 1
@@ -80,6 +103,7 @@ exponentiation b e m
     | even e    = let p = (exponentiation b (e `div` 2) m) `mod` m
                    in (p^(2::Integer)) `mod` m
     | otherwise = (b * exponentiation b (e-1) m) `mod` m
+#endif
 
 --{-# DEPRECATED exponantiation_rtl_binary "typo in API name it's called exponentiation_rtl_binary #-}
 exponantiation_rtl_binary :: Integer -> Integer -> Integer -> Integer
@@ -91,8 +115,17 @@ exponantiation = exponentiation
 
 -- | inverse computes the modular inverse as in g^(-1) mod m
 inverse :: Integer -> Integer -> Maybe Integer
-inverse g m = if d > 1 then Nothing else Just (x `mod` m)
-    where (x,_,d) = gcde_binary g m
+#if MIN_VERSION_integer_gmp(0,5,1)
+inverse g m
+    | r == 0    = Nothing
+    | otherwise = Just r
+  where r = recipModInteger g m
+#else
+inverse g m
+    | d > 1     = Nothing
+    | otherwise = Just (x `mod` m)
+  where (x,_,d) = gcde_binary g m
+#endif
 
 -- | Compute the modular inverse of 2 coprime numbers.
 -- This is equivalent to inverse except that the result

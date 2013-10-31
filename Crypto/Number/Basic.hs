@@ -1,4 +1,8 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
+#if MIN_VERSION_integer_gmp(0,5,1)
+{-# LANGUAGE UnboxedTuples #-}
+#endif
 -- |
 -- Module      : Crypto.Number.Basic
 -- License     : BSD-style
@@ -13,7 +17,11 @@ module Crypto.Number.Basic
     , areEven
     ) where
 
+#if MIN_VERSION_integer_gmp(0,5,1)
+import GHC.Integer.GMP.Internals
+#else
 import Data.Bits
+#endif
 
 -- | sqrti returns two integer (l,b) so that l <= sqrt i <= b
 -- the implementation is quite naive, use an approximation for the first number
@@ -52,16 +60,25 @@ sqrti i
 -- gcde 'a' 'b' find (x,y,gcd(a,b)) where ax + by = d
 --
 gcde :: Integer -> Integer -> (Integer, Integer, Integer)
+#if MIN_VERSION_integer_gmp(0,5,1)
+gcde a b = (s, t, g)
+  where (# g, s #) = gcdExtInteger a b
+        t = (g - s * a) `div` b
+#else
 gcde a b = if d < 0 then (-x,-y,-d) else (x,y,d) where
     (d, x, y)                     = f (a,1,0) (b,0,1)
     f t              (0, _, _)    = t
     f (a', sa, ta) t@(b', sb, tb) =
         let (q, r) = a' `divMod` b' in
         f t (r, sa - (q * sb), ta - (q * tb))
+#endif
 
 -- | get the extended GCD of two integer using the extended binary algorithm (HAC 14.61)
 -- get (x,y,d) where d = gcd(a,b) and x,y satisfying ax + by = d
 gcde_binary :: Integer -> Integer -> (Integer, Integer, Integer)
+#if MIN_VERSION_integer_gmp(0,5,1)
+gcde_binary = gcde
+#else
 gcde_binary a' b'
     | b' == 0   = (1,0,a')
     | a' >= b'  = compute a' b'
@@ -85,6 +102,7 @@ gcde_binary a' b'
              in if u2 >= v2
                 then loop g x y (u2 - v2) v2 (a2 - c2) (b2 - d2) c2 d2
                 else loop g x y u2 (v2 - u2) a2 b2 (c2 - a2) (d2 - b2)
+#endif
 
 -- | check if a list of integer are all even
 areEven :: [Integer] -> Bool
