@@ -1,12 +1,18 @@
-{-| This module provides basic arithmetic operations over F₂m. Performance is
-    not optimal and it doesn't provide protection against timing
-    attacks. The 'm' parameter is implicitly derived from the irreducible
-    polynomial where applicable.
--}
 {-# LANGUAGE CPP #-}
 #ifdef VERSION_integer_gmp
 {-# LANGUAGE MagicHash #-}
 #endif
+-- |
+-- Module      : Crypto.Number.F2m
+-- License     : BSD-style
+-- Maintainer  : Danny Navarro <j@dannynavarro.net>
+-- Stability   : experimental
+-- Portability : Good
+--
+-- This module provides basic arithmetic operations over F₂m. Performance is
+-- not optimal and it doesn't provide protection against timing
+-- attacks. The 'm' parameter is implicitly derived from the irreducible
+-- polynomial where applicable.
 module Crypto.Number.F2m
     ( addF2m
     , mulF2m
@@ -114,4 +120,3 @@ log2 = imLog 2
         doDiv x' l' = if x' < b then l' else (x' `div` b) `doDiv` (l' + 1)
 #endif
 {-# INLINE log2 #-}
-
