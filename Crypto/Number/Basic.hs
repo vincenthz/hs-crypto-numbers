@@ -48,6 +48,9 @@ sqrti i
             sq a = a * a
 
 -- | get the extended GCD of two integer using integer divMod
+--
+-- gcde 'a' 'b' find (x,y,gcd(a,b)) where ax + by = d
+--
 gcde :: Integer -> Integer -> (Integer, Integer, Integer)
 gcde a b = if d < 0 then (-x,-y,-d) else (x,y,d) where
     (d, x, y)                     = f (a,1,0) (b,0,1)
