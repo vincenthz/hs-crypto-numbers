@@ -8,8 +8,16 @@
 -- Portability : Good
 
 module Crypto.Number.ModArithmetic
-    ( exponantiation_rtl_binary
+    (
+    -- * exponentiation
+      expSafe
+    , expFast
+    , exponentiation_rtl_binary
+    , exponentiation
+    -- * deprecated name for exponentiation
+    , exponantiation_rtl_binary
     , exponantiation
+    -- * inverse computing
     , inverse
     , inverseCoprimes
     ) where
@@ -25,29 +33,61 @@ data CoprimesAssertionError = CoprimesAssertionError
 
 instance Exception CoprimesAssertionError
 
--- note on exponantiation: 0^0 is treated as 1 for mimicking the standard library;
+-- | Compute the modular exponentiation of base^exponant using
+-- algorithms design to avoid side channels and timing measurement
+--
+-- When used with integer-simple, this function is not different
+-- from expFast, and thus provide the same unstudied and dubious
+-- timing and side channels claims.
+expSafe :: Integer -- ^ base
+        -> Integer -- ^ exponant
+        -> Integer -- ^ modulo
+        -> Integer -- ^ result
+expSafe = exponentiation
+
+-- | Compute the modular exponentiation of base^exponant using
+-- the fastest algorithm without any consideration for
+-- hiding parameters.
+--
+-- Use this function when all the parameters are public,
+-- otherwise 'expSafe' should be prefered.
+expFast :: Integer -- ^ base
+        -> Integer -- ^ exponant
+        -> Integer -- ^ modulo
+        -> Integer -- ^ result
+expFast = exponentiation
+
+-- note on exponentiation: 0^0 is treated as 1 for mimicking the standard library;
 -- the mathematic debate is still open on whether or not this is true, but pratically
 -- in computer science it shouldn't be useful for anything anyway.
 
--- | exponantiation_rtl_binary computes modular exponantiation as b^e mod m
+-- | exponentiation_rtl_binary computes modular exponentiation as b^e mod m
 -- using the right-to-left binary exponentiation algorithm (HAC 14.79)
-exponantiation_rtl_binary :: Integer -> Integer -> Integer -> Integer
-exponantiation_rtl_binary 0 0 m = 1 `mod` m
-exponantiation_rtl_binary b e m = loop e b 1
+exponentiation_rtl_binary :: Integer -> Integer -> Integer -> Integer
+exponentiation_rtl_binary 0 0 m = 1 `mod` m
+exponentiation_rtl_binary b e m = loop e b 1
     where sq x          = (x * x) `mod` m
           loop !0 _  !a = a `mod` m
           loop !i !s !a = loop (i `shiftR` 1) (sq s) (if odd i then a * s else a)
 
--- | exponantiation computes modular exponantiation as b^e mod m
+-- | exponentiation computes modular exponentiation as b^e mod m
 -- using repetitive squaring.
-exponantiation :: Integer -> Integer -> Integer -> Integer
-exponantiation b e m
+exponentiation :: Integer -> Integer -> Integer -> Integer
+exponentiation b e m
     | b == 1    = b
     | e == 0    = 1
     | e == 1    = b `mod` m
-    | even e    = let p = (exponantiation b (e `div` 2) m) `mod` m
+    | even e    = let p = (exponentiation b (e `div` 2) m) `mod` m
                    in (p^(2::Integer)) `mod` m
-    | otherwise = (b * exponantiation b (e-1) m) `mod` m
+    | otherwise = (b * exponentiation b (e-1) m) `mod` m
+
+--{-# DEPRECATED exponantiation_rtl_binary "typo in API name it's called exponentiation_rtl_binary #-}
+exponantiation_rtl_binary :: Integer -> Integer -> Integer -> Integer
+exponantiation_rtl_binary = exponentiation_rtl_binary
+
+--{-# DEPRECATED exponentiation "typo in API name it's called exponentiation #-}
+exponantiation :: Integer -> Integer -> Integer -> Integer
+exponantiation = exponentiation
 
 -- | inverse computes the modular inverse as in g^(-1) mod m
 inverse :: Integer -> Integer -> Maybe Integer
