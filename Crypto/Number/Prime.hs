@@ -74,7 +74,12 @@ findPrimeFromWith rng prop !n
 
 -- | find a prime from a starting point with no specific property.
 findPrimeFrom :: CPRG g => g -> Integer -> (Integer, g)
-findPrimeFrom rng n = findPrimeFromWith rng (\g _ -> (True, g)) n
+findPrimeFrom rng n =
+#if MIN_VERSION_integer_gmp(0,5,1)
+    (nextPrimeInteger n, rng)
+#else
+    findPrimeFromWith rng (\g _ -> (True, g)) n
+#endif
 
 -- | Miller Rabin algorithm return if the number is probably prime or composite.
 -- the tries parameter is the number of recursion, that determines the accuracy of the test.
