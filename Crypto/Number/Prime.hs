@@ -1,4 +1,8 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
+#if MIN_VERSION_integer_gmp(0,5,1)
+{-# LANGUAGE MagicHash #-}
+#endif
 -- |
 -- Module      : Crypto.Number.Prime
 -- License     : BSD-style
@@ -19,10 +23,16 @@ module Crypto.Number.Prime
     ) where
 
 import Crypto.Random.API
-import Data.Bits
 import Crypto.Number.Generate
 import Crypto.Number.Basic (sqrti, gcde_binary)
 import Crypto.Number.ModArithmetic (exponantiation)
+
+#if MIN_VERSION_integer_gmp(0,5,1)
+import GHC.Integer.GMP.Internals
+import GHC.Base
+#else
+import Data.Bits
+#endif
 
 -- | returns if the number is probably prime.
 -- first a list of small primes are implicitely tested for divisibility,
@@ -69,6 +79,12 @@ findPrimeFrom rng n = findPrimeFromWith rng (\g _ -> (True, g)) n
 -- | Miller Rabin algorithm return if the number is probably prime or composite.
 -- the tries parameter is the number of recursion, that determines the accuracy of the test.
 primalityTestMillerRabin :: CPRG g => g -> Int -> Integer -> (Bool, g)
+#if MIN_VERSION_integer_gmp(0,5,1)
+primalityTestMillerRabin rng (I# tries) !n =
+    case testPrimeInteger n tries of
+        0# -> (False, rng)
+        _  -> (True, rng)
+#else
 primalityTestMillerRabin rng tries !n
     | n <= 3     = error "Miller-Rabin requires tested value to be > 3"
     | even n     = (False, rng)
@@ -105,6 +121,7 @@ primalityTestMillerRabin rng tries !n
                   | x2 == 1   = False
                   | x2 /= nm1 = loop' ws ((x2*x2) `mod` n) (r+1)
                   | otherwise = loop ws
+#endif
 
 {-
     n < z -> witness to test
