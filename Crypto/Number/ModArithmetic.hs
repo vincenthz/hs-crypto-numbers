@@ -42,6 +42,9 @@ instance Exception CoprimesAssertionError
 -- | Compute the modular exponentiation of base^exponant using
 -- algorithms design to avoid side channels and timing measurement
 --
+-- Modulo need to be odd otherwise the normal fast modular exponentiation
+-- is used.
+--
 -- When used with integer-simple, this function is not different
 -- from expFast, and thus provide the same unstudied and dubious
 -- timing and side channels claims.
@@ -49,11 +52,12 @@ expSafe :: Integer -- ^ base
         -> Integer -- ^ exponant
         -> Integer -- ^ modulo
         -> Integer -- ^ result
-expSafe =
 #if MIN_VERSION_integer_gmp(0,5,1)
-    powModSecInteger
+expSafe b e m
+    | odd m     = powModSecInteger b e m
+    | otherwise = powModInteger b e m
 #else
-    exponentiation
+expSafe = exponentiation
 #endif
 
 -- | Compute the modular exponentiation of base^exponant using
