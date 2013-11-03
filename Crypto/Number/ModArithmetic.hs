@@ -85,7 +85,7 @@ expFast =
 -- using the right-to-left binary exponentiation algorithm (HAC 14.79)
 exponentiation_rtl_binary :: Integer -> Integer -> Integer -> Integer
 #if MIN_VERSION_integer_gmp(0,5,1)
-exponentiation_rtl_binary = powModSecInteger
+exponentiation_rtl_binary = expSafe
 #else
 exponentiation_rtl_binary 0 0 m = 1 `mod` m
 exponentiation_rtl_binary b e m = loop e b 1
@@ -98,7 +98,7 @@ exponentiation_rtl_binary b e m = loop e b 1
 -- using repetitive squaring.
 exponentiation :: Integer -> Integer -> Integer -> Integer
 #if MIN_VERSION_integer_gmp(0,5,1)
-exponentiation = powModSecInteger
+exponentiation = expSafe
 #else
 exponentiation b e m
     | b == 1    = b
