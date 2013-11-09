@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if MIN_VERSION_integer_gmp(0,5,1)
+{-# LANGUAGE MagicHash, UnboxedTuples, BangPatterns #-}
+#endif
 module Crypto.Number.Serialize
     ( i2osp
     , os2ip
@@ -7,28 +11,55 @@ module Crypto.Number.Serialize
     ) where
 
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
-import Data.Bits
-import Foreign.Storable
 import Foreign.Ptr
 
+#if MIN_VERSION_integer_gmp(0,5,1)
+import GHC.Integer.GMP.Internals
+import GHC.Base
+import GHC.Ptr
+import System.IO.Unsafe
+import Foreign.ForeignPtr
+#else
+import qualified Data.ByteString as B
+import Foreign.Storable
+import Data.Bits
+#endif
+
+#if !MIN_VERSION_integer_gmp(0,5,1)
 {-# INLINE divMod256 #-}
 divMod256 :: Integer -> (Integer, Integer)
 divMod256 n = (n `shiftR` 8, n .&. 0xff)
+#endif
 
 -- | os2ip converts a byte string into a positive integer
-{-# INLINE os2ip #-}
 os2ip :: ByteString -> Integer
+#if MIN_VERSION_integer_gmp(0,5,1)
+os2ip bs = unsafePerformIO $ withForeignPtr fptr $ \ptr ->
+    let !(Ptr ad) = (ptr `plusPtr` ofs)
+     in IO $ \s -> importIntegerFromAddr ad (int2Word# n) 1# s
+  where !(fptr, ofs, !(I# n)) = B.toForeignPtr bs
+{-# NOINLINE os2ip #-}
+#else
 os2ip = B.foldl' (\a b -> (256 * a) .|. (fromIntegral b)) 0
+{-# INLINE os2ip #-}
+#endif
 
 -- | i2osp converts a positive integer into a byte string
 i2osp :: Integer -> ByteString
+#if MIN_VERSION_integer_gmp(0,5,1)
+i2osp m = B.unsafeCreate (I# (word2Int# sz)) fillPtr
+  where !sz = sizeInBaseInteger m 256#
+        fillPtr (Ptr srcAddr) = IO $ \s -> case exportIntegerToAddr m srcAddr 1# s of
+                                                (# s2, _ #) -> (# s2, () #)
+{-# NOINLINE i2osp #-}
+#else
 i2osp m
     | m < 0     = error "i2osp: cannot convert a negative integer to a bytestring"
     | otherwise = B.reverse $ B.unfoldr fdivMod256 m
     where fdivMod256 0 = Nothing
           fdivMod256 n = Just (fromIntegral a,b) where (b,a) = divMod256 n
+#endif
 
 
 -- | just like i2osp, but take an extra parameter for size.
@@ -37,19 +68,44 @@ i2osp m
 --
 -- FIXME: use unsafeCreate to fill the bytestring
 i2ospOf :: Int -> Integer -> Maybe ByteString
+#if MIN_VERSION_integer_gmp(0,5,1)
+i2ospOf len m
+    | sz <= len = Just $ i2ospOf_ len m
+    | otherwise = Nothing
+  where !sz = I# (word2Int# (sizeInBaseInteger m 256#))
+#else
 i2ospOf len m
     | lenbytes < len  = Just $ B.replicate (len - lenbytes) 0 `B.append` bytes
     | lenbytes == len = Just bytes
     | otherwise       = Nothing
-    where
-        lenbytes = B.length bytes
+  where lenbytes = B.length bytes
         bytes    = i2osp m
+#endif
 
--- | just like i2ospOf except that it doesn't expect a failure.
+-- | just like i2ospOf except that it doesn't expect a failure: i.e.
+-- an integer larger than the number of output bytes requested
+--
 -- for example if you just took a modulo of the number that represent
 -- the size (example the RSA modulo n).
-{-# INLINE i2ospOf_ #-}
 i2ospOf_ :: Int -> Integer -> ByteString
+#if MIN_VERSION_integer_gmp(0,5,1)
+i2ospOf_ len m = unsafePerformIO $ B.create len fillPtr
+  where !sz = (sizeInBaseInteger m 256#)
+        isz = I# (word2Int# sz)
+        fillPtr ptr
+            | len < isz  = error "cannot compute i2ospOf_ with integer larger than output bytes"
+            | len == isz =
+                let !(Ptr srcAddr) = ptr in
+                IO $ \s -> case exportIntegerToAddr m srcAddr 1# s of
+                                (# s2, _ #) -> (# s2, () #)
+            | otherwise = do
+                let z = len-isz
+                _ <- B.memset ptr 0 (fromIntegral len)
+                let !(Ptr addr) = ptr `plusPtr` z
+                IO $ \s -> case exportIntegerToAddr m addr 1# s of
+                                (# s2, _ #) -> (# s2, () #)
+{-# NOINLINE i2ospOf_ #-}
+#else
 i2ospOf_ len m = B.unsafeCreate len fillPtr
     where fillPtr srcPtr = loop m (srcPtr `plusPtr` (len-1))
             where loop n ptr = do
@@ -63,11 +119,17 @@ i2ospOf_ len m = B.unsafeCreate len fillPtr
                       if ptr == srcPtr
                           then return ()
                           else fillerLoop (ptr `plusPtr` (-1))
+{-# INLINE i2ospOf_ #-}
+#endif
 
 -- | returns the number of bytes to store an integer with i2osp
 --
--- FIXME: really slow implementation. use log or bigger shifts.
+-- with integer-simple, this function is really slow.
 lengthBytes :: Integer -> Int
+#if MIN_VERSION_integer_gmp(0,5,1)
+lengthBytes n = I# (word2Int# (sizeInBaseInteger n 256#))
+#else
 lengthBytes n
     | n < 256   = 1
     | otherwise = 1 + lengthBytes (n `shiftR` 8)
+#endif
