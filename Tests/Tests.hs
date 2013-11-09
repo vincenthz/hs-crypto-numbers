@@ -122,8 +122,8 @@ instance Arbitrary Seed where
     arbitrary = arbitrary >>= \(Positive i) -> return (Seed i)
 
 serializationKATTests = concatMap f vectors
-    where f (v, bs) = [ testCase ("i2osp " ++ show v) (i2osp v  @=? bs)
-                      , testCase ("os2ip " ++ show v) (os2ip bs @=? v)
+    where f (v, bs) = [ testCase ("i2osp " ++ show v) (i2osp v  @?= bs)
+                      , testCase ("os2ip " ++ show v) (os2ip bs @?= v)
                       ]
           vectors =
             [ (0x10000, "\SOH\NUL\NUL")
