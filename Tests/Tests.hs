@@ -133,12 +133,25 @@ serializationKATTests = concatMap f vectors
             , (0x7521908421feabd21490, "u!\144\132!\254\171\210\DC4\144")
             ]
 
+serializationOfKATTests = concatMap f vectors
+    where f (elen, v, bs) = [ testCase ("i2osp " ++ show v) (i2ospOf elen v @?= Just bs)
+                            , testCase ("os2ip " ++ show v) (os2ip bs @?= v)
+                            ]
+          vectors =
+            [ (5, 0x10000, "\NUL\NUL\SOH\NUL\NUL")
+            , (3, 0x1234, "\NUL\DC24")
+            , (8, 0xf123456, "\NUL\NUL\NUL\NUL\SI\DC24V")
+            , (10, 0xf21908421feabd21490, "\SI!\144\132!\254\171\210\DC4\144")
+            , (12, 0x7521908421feabd21490, "\NUL\NULu!\144\132!\254\171\210\DC4\144")
+            ]
+
 main :: IO ()
 main = defaultMain
     [ testGroup "serialization"
         [ testProperty "unbinary.binary==id" (\(Positive i) -> os2ip (i2osp i) == i)
         , testProperty "length integer" (\(Positive i) -> B.length (i2osp i) == lengthBytes i)
         , testGroup "KAT" serializationKATTests
+        , testGroup "KAT2" serializationOfKATTests
         ]
     , testGroup "gcde binary"
         [ testProperty "gcde" prop_gcde_binary_valid
