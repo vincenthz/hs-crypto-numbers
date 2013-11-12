@@ -1,4 +1,7 @@
 {-# LANGUAGE CPP #-}
+#ifndef MIN_VERSION_integer_gmp
+#define MIN_VERSION_integer_gmp(a,b,c) 0
+#endif
 #ifdef VERSION_integer_gmp
 {-# LANGUAGE MagicHash #-}
 #endif

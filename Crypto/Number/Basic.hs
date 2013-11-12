@@ -1,5 +1,8 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
+#ifndef MIN_VERSION_integer_gmp
+#define MIN_VERSION_integer_gmp(a,b,c) 0
+#endif
 #if MIN_VERSION_integer_gmp(0,5,1)
 {-# LANGUAGE UnboxedTuples #-}
 #endif
