@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Test.Framework (defaultMain, testGroup)
+import Test.Framework (defaultMain, testGroup, Test)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.Framework.Providers.HUnit (testCase)
 
 import Test.QuickCheck
-import Test.HUnit
+import Test.HUnit ((@?=))
 --import Test.QuickCheck.Test
 
 import Control.Applicative ((<$>))
@@ -45,12 +45,14 @@ prop_modinv_valid (Positive a, Positive m)
 prop_sqrti_valid :: Positive Integer -> Bool
 prop_sqrti_valid (Positive i) = l*l <= i && i <= u*u where (l, u) = sqrti i
 
+{-
 prop_generate_prime_valid :: Seed -> Bool
 prop_generate_prime_valid i =
     -- because of the next naive test, we can't generate easily number above 32 bits
     -- otherwise it slows down the tests to uselessness. when AKS or ECPP is implemented
     -- we can revisit the number here
     primalityTestNaive $ withRNG i (\g -> generatePrime g 32)
+-}
 
 prop_miller_rabin_valid :: (Seed, PositiveSmall) -> Bool
 prop_miller_rabin_valid (seed, PositiveSmall i)
@@ -121,6 +123,7 @@ instance Show Seed where
 instance Arbitrary Seed where
     arbitrary = arbitrary >>= \(Positive i) -> return (Seed i)
 
+serializationKATTests :: [Test]
 serializationKATTests = concatMap f vectors
     where f (v, bs) = [ testCase ("i2osp " ++ show v) (i2osp v  @?= bs)
                       , testCase ("os2ip " ++ show v) (os2ip bs @?= v)
@@ -133,6 +136,7 @@ serializationKATTests = concatMap f vectors
             , (0x7521908421feabd21490, "u!\144\132!\254\171\210\DC4\144")
             ]
 
+serializationOfKATTests :: [Test]
 serializationOfKATTests = concatMap f vectors
     where f (elen, v, bs) = [ testCase ("i2osp " ++ show v) (i2ospOf elen v @?= Just bs)
                             , testCase ("os2ip " ++ show v) (os2ip bs @?= v)
