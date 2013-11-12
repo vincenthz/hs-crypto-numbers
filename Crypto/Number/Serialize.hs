@@ -2,6 +2,14 @@
 #if MIN_VERSION_integer_gmp(0,5,1)
 {-# LANGUAGE MagicHash, UnboxedTuples, BangPatterns #-}
 #endif
+-- |
+-- Module      : Crypto.Number.Serialize
+-- License     : BSD-style
+-- Maintainer  : Vincent Hanquez <vincent@snarc.org>
+-- Stability   : experimental
+-- Portability : Good
+--
+-- fast serialization primitives for integer
 module Crypto.Number.Serialize
     ( i2osp
     , os2ip
