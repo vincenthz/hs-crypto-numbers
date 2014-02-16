@@ -59,6 +59,7 @@ os2ip = B.foldl' (\a b -> (256 * a) .|. (fromIntegral b)) 0
 -- | i2osp converts a positive integer into a byte string
 i2osp :: Integer -> ByteString
 #if MIN_VERSION_integer_gmp(0,5,1)
+i2osp 0 = B.singleton 0
 i2osp m = B.unsafeCreate (I# (word2Int# sz)) fillPtr
   where !sz = sizeInBaseInteger m 256#
         fillPtr (Ptr srcAddr) = IO $ \s -> case exportIntegerToAddr m srcAddr 1# s of
