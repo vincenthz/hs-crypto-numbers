@@ -2,9 +2,6 @@
 #ifndef MIN_VERSION_integer_gmp
 #define MIN_VERSION_integer_gmp(a,b,c) 0
 #endif
-#ifdef VERSION_integer_gmp
-{-# LANGUAGE MagicHash #-}
-#endif
 -- |
 -- Module      : Crypto.Number.F2m
 -- License     : BSD-style
@@ -27,11 +24,7 @@ module Crypto.Number.F2m
 
 import Control.Applicative ((<$>))
 import Data.Bits ((.&.),(.|.),xor,shift,testBit)
-
-#ifdef VERSION_integer_gmp
-import GHC.Exts
-import GHC.Integer.Logarithms (integerLog2#)
-#endif
+import Crypto.Number.Basic
 
 -- | Addition over F₂m. This is just a synonym of  'xor'.
 addF2m :: Integer -> Integer -> Integer
@@ -108,18 +101,3 @@ divF2m :: Integer  -- ^ Irreducible binary polynomial
        -> Maybe Integer
 divF2m fx n1 n2 = mulF2m fx n1 <$> invF2m fx n2
 {-# INLINE divF2m #-}
-
-log2 :: Integer -> Int
-#if defined(VERSION_integer_gmp)
-log2 0 = 0
-log2 x = I# (integerLog2# x)
-#else
--- http://www.haskell.org/pipermail/haskell-cafe/2008-February/039465.html
-log2 = imLog 2
-  where
-    imLog b x = if x < b then 0 else (x `div` b^l) `doDiv` l
-      where
-        l = 2 * imLog (b * b) x
-        doDiv x' l' = if x' < b then l' else (x' `div` b) `doDiv` (l' + 1)
-#endif
-{-# INLINE log2 #-}

@@ -6,6 +6,9 @@
 #if MIN_VERSION_integer_gmp(0,5,1)
 {-# LANGUAGE UnboxedTuples #-}
 #endif
+#ifdef VERSION_integer_gmp
+{-# LANGUAGE MagicHash #-}
+#endif
 -- |
 -- Module      : Crypto.Number.Basic
 -- License     : BSD-style
@@ -18,12 +21,17 @@ module Crypto.Number.Basic
     , gcde
     , gcde_binary
     , areEven
+    , log2
     ) where
 
 #if MIN_VERSION_integer_gmp(0,5,1)
 import GHC.Integer.GMP.Internals
 #else
 import Data.Bits
+#endif
+#ifdef VERSION_integer_gmp
+import GHC.Exts
+import GHC.Integer.Logarithms (integerLog2#)
 #endif
 
 -- | sqrti returns two integer (l,b) so that l <= sqrt i <= b
@@ -110,3 +118,18 @@ gcde_binary a' b'
 -- | check if a list of integer are all even
 areEven :: [Integer] -> Bool
 areEven = and . map even
+
+log2 :: Integer -> Int
+#ifdef VERSION_integer_gmp
+log2 0 = 0
+log2 x = I# (integerLog2# x)
+#else
+-- http://www.haskell.org/pipermail/haskell-cafe/2008-February/039465.html
+log2 = imLog 2
+  where
+    imLog b x = if x < b then 0 else (x `div` b^l) `doDiv` l
+      where
+        l = 2 * imLog (b * b) x
+        doDiv x' l' = if x' < b then l' else (x' `div` b) `doDiv` (l' + 1)
+#endif
+{-# INLINE log2 #-}
