@@ -23,6 +23,7 @@ module Crypto.Number.Serialize
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Internal as B
+import qualified Data.ByteString as B
 import Foreign.Ptr
 
 #if MIN_VERSION_integer_gmp(0,5,1)
@@ -32,7 +33,6 @@ import GHC.Ptr
 import System.IO.Unsafe
 import Foreign.ForeignPtr
 #else
-import qualified Data.ByteString as B
 import Foreign.Storable
 import Data.Bits
 #endif
