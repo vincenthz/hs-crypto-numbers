@@ -48,7 +48,11 @@ os2ip :: ByteString -> Integer
 #if MIN_VERSION_integer_gmp(0,5,1)
 os2ip bs = unsafePerformIO $ withForeignPtr fptr $ \ptr ->
     let !(Ptr ad) = (ptr `plusPtr` ofs)
+#if __GLASGOW_HASKELL__ >= 710
+     in importIntegerFromAddr ad (int2Word# n) 1#
+#else
      in IO $ \s -> importIntegerFromAddr ad (int2Word# n) 1# s
+#endif
   where !(fptr, ofs, !(I# n)) = B.toForeignPtr bs
 {-# NOINLINE os2ip #-}
 #else
@@ -62,8 +66,12 @@ i2osp :: Integer -> ByteString
 i2osp 0 = B.singleton 0
 i2osp m = B.unsafeCreate (I# (word2Int# sz)) fillPtr
   where !sz = sizeInBaseInteger m 256#
+#if __GLASGOW_HASKELL__ >= 710
+        fillPtr (Ptr srcAddr) = exportIntegerToAddr m srcAddr 1#
+#else
         fillPtr (Ptr srcAddr) = IO $ \s -> case exportIntegerToAddr m srcAddr 1# s of
                                                 (# s2, _ #) -> (# s2, () #)
+#endif
 {-# NOINLINE i2osp #-}
 #else
 i2osp m
@@ -108,14 +116,22 @@ i2ospOf_ len m = unsafePerformIO $ B.create len fillPtr
             | len < isz  = error "cannot compute i2ospOf_ with integer larger than output bytes"
             | len == isz =
                 let !(Ptr srcAddr) = ptr in
+#if __GLASGOW_HASKELL__ >= 710
+                exportIntegerToAddr m srcAddr 1#
+#else
                 IO $ \s -> case exportIntegerToAddr m srcAddr 1# s of
                                 (# s2, _ #) -> (# s2, () #)
+#endif
             | otherwise = do
                 let z = len-isz
                 _ <- B.memset ptr 0 (fromIntegral len)
                 let !(Ptr addr) = ptr `plusPtr` z
+#if __GLASGOW_HASKELL__ >= 710
+                exportIntegerToAddr m addr 1#
+#else
                 IO $ \s -> case exportIntegerToAddr m addr 1# s of
                                 (# s2, _ #) -> (# s2, () #)
+#endif
 {-# NOINLINE i2ospOf_ #-}
 #else
 i2ospOf_ len m = B.unsafeCreate len fillPtr
