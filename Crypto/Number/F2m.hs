@@ -83,12 +83,10 @@ invF2m _  0 = Nothing
 invF2m fx n = go n fx 1 0
     where
       go u v g1 g2
-          | u == 1 = Just $ modF2m fx g1
-          | otherwise = if j < 0
-                           then go u  (v  `xor` shift  u (-j))
-                                   g1 (g2 `xor` shift g1 (-j))
-                           else go (u  `xor` shift v  j) v
-                                   (g1 `xor` shift g2 j) g2
+          | u == 0    = Nothing
+          | u == 1    = Just $ modF2m fx g1
+          | j < 0     = go u  (v  `xor` shift  u (-j)) g1 (g2 `xor` shift g1 (-j))
+          | otherwise = go (u  `xor` shift v  j) v (g1 `xor` shift g2 j) g2
         where
           j = log2 u - log2 v
 {-# INLINABLE invF2m #-}
