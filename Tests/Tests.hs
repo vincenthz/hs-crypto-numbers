@@ -1,12 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Test.Framework (defaultMain, testGroup, Test)
-import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.Framework.Providers.HUnit (testCase)
-
-import Test.QuickCheck
-import Test.HUnit ((@?=))
---import Test.QuickCheck.Test
+import Test.Tasty
+import Test.Tasty.QuickCheck
+import Test.Tasty.HUnit
 
 import Control.Applicative ((<$>))
 
@@ -68,7 +64,8 @@ prop_generate_valid (seed, Positive h) =
      in (v >= 0 && v < h)
 
 prop_invF2m_valid :: Fx -> PositiveLarge -> Bool
-prop_invF2m_valid (Fx fx) (PositiveLarge a) = maybe True ((1 ==) . mulF2m fx a) (invF2m fx a)
+prop_invF2m_valid (Fx fx) (PositiveLarge a) =
+    maybe True ((1 ==) . mulF2m fx a) (invF2m fx a)
 
 prop_squareF2m_valid :: Fx -> PositiveLarge -> Bool
 prop_squareF2m_valid (Fx fx) (PositiveLarge a) = mulF2m fx a a == squareF2m fx a
@@ -123,7 +120,7 @@ instance Show Seed where
 instance Arbitrary Seed where
     arbitrary = arbitrary >>= \(Positive i) -> return (Seed i)
 
-serializationKATTests :: [Test]
+serializationKATTests :: [TestTree]
 serializationKATTests = concatMap f vectors
     where f (v, bs) = [ testCase ("i2osp " ++ show v) (i2osp v  @?= bs)
                       , testCase ("os2ip " ++ show v) (os2ip bs @?= v)
@@ -136,7 +133,7 @@ serializationKATTests = concatMap f vectors
             , (0x7521908421feabd21490, "u!\144\132!\254\171\210\DC4\144")
             ]
 
-serializationOfKATTests :: [Test]
+serializationOfKATTests :: [TestTree]
 serializationOfKATTests = concatMap f vectors
     where f (elen, v, bs) = [ testCase ("i2osp " ++ show v) (i2ospOf elen v @?= Just bs)
                             , testCase ("os2ip " ++ show v) (os2ip bs @?= v)
@@ -150,7 +147,7 @@ serializationOfKATTests = concatMap f vectors
             ]
 
 main :: IO ()
-main = defaultMain
+main = defaultMain $ testGroup "crypto-numbers"
     [ testGroup "serialization"
         [ testProperty "unbinary.binary==id" (\(Positive i) -> os2ip (i2osp i) == i)
         , testProperty "length integer" (\(Positive i) -> B.length (i2osp i) == lengthBytes i)
@@ -178,7 +175,9 @@ main = defaultMain
         [ testProperty "miller-rabin" prop_miller_rabin_valid
         ]
     , testGroup "F2m"
-        [ testProperty "invF2m" prop_invF2m_valid
+        [ testCase "inv2Fm 1" (invF2m 283 566 @?= Nothing)
+        , testCase "inv2Fm 1" (invF2m 283 64800122153546929198091027632453789752394810192663929321789113225485980298851325347397170296259938610151214285229944494947456450203170796566256526607878773803495973593989422 @?= Nothing)
+        , testProperty "invF2m" prop_invF2m_valid
         , testProperty "squareF2m" prop_squareF2m_valid
         ]
     ]
