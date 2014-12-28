@@ -25,15 +25,15 @@ generateMax rng m
     | otherwise =
         let (tentativeResult, rng') =
                 withRandomBytes rng (lengthBytes m) $ \bs ->
-                    let lengthBits = (log2 (m-1) + 1)
-                        mask = if lengthBits `mod` 8 == 0
+                    let lengthBits = (log2 (m-1) + 1) in
+                    let mask = if lengthBits `mod` 8 == 0
                                then 0xff
                                else (1 `shiftL` (lengthBits `mod` 8)) - 1 in
                     os2ip $ snd $ B.mapAccumL (\acc w -> (0xff, w .&. acc))
                                       mask bs in
         if tentativeResult < m
-            then (tentativeResult, rng')
-            else generateMax rng' m
+    then (tentativeResult,rng')
+    else generateMax rng' m
 
 -- | generate a number between the inclusive bound [low,high] uniformly at random.
 generateBetween :: CPRG g => g -> Integer -> Integer -> (Integer, g)
