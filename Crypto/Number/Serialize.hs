@@ -27,6 +27,9 @@ import qualified Data.ByteString as B
 import Foreign.Ptr
 
 #if MIN_VERSION_integer_gmp(0,5,1)
+#if __GLASGOW_HASKELL__ >= 710
+import Control.Monad (void)
+#endif
 import GHC.Integer.GMP.Internals
 import GHC.Base
 import GHC.Ptr
@@ -67,7 +70,7 @@ i2osp 0 = B.singleton 0
 i2osp m = B.unsafeCreate (I# (word2Int# sz)) fillPtr
   where !sz = sizeInBaseInteger m 256#
 #if __GLASGOW_HASKELL__ >= 710
-        fillPtr (Ptr srcAddr) = exportIntegerToAddr m srcAddr 1#
+        fillPtr (Ptr srcAddr) = void $ exportIntegerToAddr m srcAddr 1#
 #else
         fillPtr (Ptr srcAddr) = IO $ \s -> case exportIntegerToAddr m srcAddr 1# s of
                                                 (# s2, _ #) -> (# s2, () #)
@@ -117,7 +120,7 @@ i2ospOf_ len m = unsafePerformIO $ B.create len fillPtr
             | len == isz =
                 let !(Ptr srcAddr) = ptr in
 #if __GLASGOW_HASKELL__ >= 710
-                exportIntegerToAddr m srcAddr 1#
+                void (exportIntegerToAddr m srcAddr 1#)
 #else
                 IO $ \s -> case exportIntegerToAddr m srcAddr 1# s of
                                 (# s2, _ #) -> (# s2, () #)
@@ -127,7 +130,7 @@ i2ospOf_ len m = unsafePerformIO $ B.create len fillPtr
                 _ <- B.memset ptr 0 (fromIntegral len)
                 let !(Ptr addr) = ptr `plusPtr` z
 #if __GLASGOW_HASKELL__ >= 710
-                exportIntegerToAddr m addr 1#
+                void (exportIntegerToAddr m addr 1#)
 #else
                 IO $ \s -> case exportIntegerToAddr m addr 1# s of
                                 (# s2, _ #) -> (# s2, () #)
