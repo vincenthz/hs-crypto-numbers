@@ -51,13 +51,19 @@ instance Exception CoprimesAssertionError
 -- When used with integer-simple, this function is not different
 -- from expFast, and thus provide the same unstudied and dubious
 -- timing and side channels claims.
+--
+-- with GHC 7.10, the powModSecInteger is missing from integer-gmp
+-- (which is now integer-gmp2), so is has the same security as old
+-- ghc version.
 expSafe :: Integer -- ^ base
         -> Integer -- ^ exponant
         -> Integer -- ^ modulo
         -> Integer -- ^ result
 #if MIN_VERSION_integer_gmp(0,5,1)
 expSafe b e m
+#if MIN_VERSION_integer_gmp(1,0,0)
     | odd m     = powModSecInteger b e m
+#endif
     | otherwise = powModInteger b e m
 #else
 expSafe = exponentiation
