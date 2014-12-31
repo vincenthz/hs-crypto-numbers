@@ -61,7 +61,7 @@ expSafe :: Integer -- ^ base
         -> Integer -- ^ result
 #if MIN_VERSION_integer_gmp(0,5,1)
 expSafe b e m
-#if MIN_VERSION_integer_gmp(1,0,0)
+#if !(MIN_VERSION_integer_gmp(1,0,0))
     | odd m     = powModSecInteger b e m
 #endif
     | otherwise = powModInteger b e m
