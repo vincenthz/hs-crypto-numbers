@@ -44,7 +44,7 @@ Test-Suite test-crypto-numbers
                    , bytestring
                    , byteable
                    , vector
-                   , tasty >= 0.10.0.1
+                   , tasty
                    , tasty-quickcheck
                    , tasty-hunit
   ghc-options:       -Wall -O2
