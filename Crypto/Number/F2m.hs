@@ -80,7 +80,9 @@ square n1 = go n1 ln1
         y = n .&. (shift 1 (2 * (ln1 - s) + 1) - 1)
 {-# INLINE square #-}
 
--- | Inversion over  F₂m using extended Euclidean algorithm.
+-- | Inversion of @n over F₂m using extended Euclidean algorithm.
+--
+-- If @n doesn't have an inverse, Nothing is returned.
 invF2m :: BinaryPolynomial -- ^ Irreducible binary polynomial
        -> Integer -> Maybe Integer
 invF2m _  0 = Nothing
