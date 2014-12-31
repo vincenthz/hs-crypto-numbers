@@ -86,7 +86,9 @@ square n1 = go n1 ln1
 invF2m :: BinaryPolynomial -- ^ Irreducible binary polynomial
        -> Integer -> Maybe Integer
 invF2m _  0 = Nothing
-invF2m fx n = go n fx 1 0
+invF2m fx n
+    | n >= fx   = Nothing
+    | otherwise = go n fx 1 0
     where
       go u v g1 g2
           | u == 1    = Just $ modF2m fx g1
