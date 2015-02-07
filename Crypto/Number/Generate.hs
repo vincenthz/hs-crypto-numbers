@@ -16,7 +16,7 @@ import Crypto.Number.Basic
 import Crypto.Number.Serialize
 import Crypto.Random.API
 import qualified Data.ByteString as B
-import Data.Bits ((.|.), shiftR)
+import Data.Bits ((.|.), (.&.), shiftR)
 
 -- | generate a positive integer x, s.t. 0 <= x < m
 --
@@ -55,4 +55,4 @@ generateBits rng nbBits = withRandomBytes rng nbBytes' $ \bs -> modF (os2ip bs)
         nbBytes' | strayBits == 0 = nbBytes
                  | otherwise      = nbBytes + 1
         modF | strayBits == 0 = id
-             | otherwise      = flip mod (2^nbBits)
+             | otherwise      = (.&.) (2^nbBits - 1)
