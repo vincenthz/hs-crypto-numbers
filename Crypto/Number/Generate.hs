@@ -9,6 +9,7 @@ module Crypto.Number.Generate
     ( generateMax
     , generateBetween
     , generateOfSize
+    , generateBits
     ) where
 
 import Crypto.Number.Serialize
@@ -35,3 +36,12 @@ generateBetween rng low high = (low + v, rng')
 generateOfSize :: CPRG g => g -> Int -> (Integer, g)
 generateOfSize rng bits = withRandomBytes rng (bits `div` 8) $ \bs ->
     os2ip $ snd $ B.mapAccumL (\acc w -> (0, w .|. acc)) 0xc0 bs
+
+-- | Generate a number with the specified number of bits
+generateBits :: CPRG g => g -> Int -> (Integer, g)
+generateBits rng nbBits = withRandomBytes rng nbBytes' $ \bs -> modF (os2ip bs)
+  where (nbBytes, strayBits) = nbBits `divMod` 8
+        nbBytes' | strayBits == 0 = nbBytes
+                 | otherwise      = nbBytes + 1
+        modF | strayBits == 0 = id
+             | otherwise      = flip mod (2^nbBits)
